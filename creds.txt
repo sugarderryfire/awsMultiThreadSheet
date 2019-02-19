@@ -1,0 +1,17 @@
+armonravid@gmail.com - is the manager that manage the instances
+6695 card
+the key for the instance is ec2keyInstance4.pem
+user created in the above account - only for us-east region.
+user name:root
+Access key ID: AKIAJYRF66MZSWQKCQ7Q
+Secret access key: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
+
+
+
+
+
+
+
+
+
+
