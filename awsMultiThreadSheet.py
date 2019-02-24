@@ -1,6 +1,15 @@
-
 import urllib2
-import requests
+import boto3
+import time
+import sys
+import paramiko
+import base64
+import os
+import random
+import subprocess
+import threading
+import pandas as pd
+import numpy as np
 
 
 #global vars
@@ -14,6 +23,8 @@ maxInstances=4
 ec2 = boto3.resource('ec2',region_name="us-east-1")
 threads=[] # list of all the threads.
 runningInstances=[]
+limitCount=0
+limitCounter=0
 
 
 #create key pair in a random region.
@@ -37,9 +48,11 @@ def config_instances():
 def get_number_instances():
     # Boto 3
     # Use the filter() method of the instances collection to retrieve
+    instancesNumber=0
     instances = ec2.instances.filter(
         Filters=[{'Name': 'instance-state-name', 'Values': ['running']}])
-    instancesNumber=len(instances)
+    for insta in instances:
+	instancesNumber=instancesNumber+1
     return instancesNumber
 
 
@@ -51,7 +64,6 @@ def get_running_instances():
     for instance in instances:
         if instance not in runningInstances:
 	    runningInstances.append(instance.public_ip_address)
-	    occupiedInstancesThreads.append(0)
 	    print(instance.id, instance.instance_type,instance.public_ip_address)
     return runningInstances
 
@@ -76,6 +88,7 @@ def threadwhoami():
             return threadIndex
         threadIndex=threadIndex+1
     threadIndex=-1 # if no threads in the list - return error -1.
+    print 'error in threads index.'
     return threadIndex
             
 
@@ -134,11 +147,28 @@ def commit_all(hostIP):
         print e
 
 
+def execute(client,command):
+    try:
+        print 'running remote command'
+        # Execute a command(cmd) after connecting/ssh to an instance
+        stdin, stdout, stderr = client.exec_command(command)
+        print stdout.read()
+    except Exception, e:
+        print e
+
+
+
+def get_random(min1,max1):
+    chosenNumber=random.randint(min1-1,max1-1)
+    return chosenNumber
+
+
+
 #terminate instances and clean list of instances and occupied instances threads.
 def terminate_instances():
-    global ec2, runningInstances,occupiedInstancesThreads
+    global ec2, runningInstances
     print 'terminate'
-    #terminate instances in ec2_instances arrï
+    #terminate instances in ec2_instances arr
     instances = ec2.instances.filter(
         Filters=[{'Name': 'instance-state-name', 'Values': ['running']}])
     for instance in instances:
@@ -156,14 +186,16 @@ def delete_key_pair(ec3):
 
 #start function for each thread. each thread create instances and execute modular functions.
 def start_func(regionRand,instancesRandNumber):
+    global currentImage
     #create the main program
     currentImage=imageList[regionRand] # get the current image by using regionRand number
     print 'Creating instances'
     print currentImage
     create_instances()
+    #time.sleep(80)
     instancesNumber=get_number_instances()
-    while(instancesNumber!=instancesRandNumber):
-        time.sleep(random.randint(70,90))
+    while(instancesNumber!=instancesRandNumber-1):
+        time.sleep(random.randint(30,50))
         instancesNumber=get_number_instances()
     get_running_instances() # will be executed # of threads times. #save list of running instances IPs.
     hostIP=attachThread2Instance()
@@ -175,6 +207,8 @@ def start_func(regionRand,instancesRandNumber):
 def createThreads(regionRand):
     global ec2,minInstances,maxInstances
     instancesRandNumber=random.randint(minInstances,maxInstances) # get a random number between the min max instances vars
+    print 'rand is '
+    print instancesRandNumber
     for inst in range(1,instancesRandNumber):
 	t=threading.Thread(target=start_func,args=[regionRand,instancesRandNumber])
 	threads.append(t)
@@ -184,14 +218,50 @@ def createThreads(regionRand):
     terminate_instances()
     ec3 = boto3.client('ec2',region_name=regionList[regionRand])
     delete_key_pair(ec3)
+
+
+def changeFilescr(keyword,ID):
+    line1="#!/bin/bash\n"
+    line2="/usr/bin/Xvfb :99 -ac -screen 0 1024x768x8 & export DISPLAY=:99\n"
+    filea=open('scr.sh','w')
+    filea.write(line1)
+    filea.write(line2)
+    lineCommand='python Automain.py '
+    lineCommand=lineCommand+keyword + ' ' + ID
+    filea.write(lineCommand)
+    filea.close()
+
+
+
+def checkFinishXLSX():
+    global limitCount,limitCounter
+    if(limitCounter==limitCount+1):
+	limitCounter=0
 	
+
+def incrementCounter():
+    global limitCounter
+    limitCounter=limitCounter+1
+
+
+def readKeyword():
+    global limitCount,limitCounter
+    data=pd.read_excel('https://github.com/sugarderryfire/awsMultiThreadSheet/blob/master/kidum.xlsx?raw=true',sheet_name='sheet1')
+    limitCount = len(data['keyword'])
+    changeFilescr(data['keyword'][limitCounter],data['appID'][limitCounter])
+    incrementCounter()
+    checkFinishXLSX()
+	
+
 
 
 def main():
     while(True):
 	regionRand=config_instances()
+	readKeyword()
 	createThreads(regionRand) # then each thread create instance.
 	time.sleep(100)
+	
 
 
 if __name__ == "__main__":
