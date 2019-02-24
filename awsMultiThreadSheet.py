@@ -192,9 +192,9 @@ def start_func(regionRand,instancesRandNumber):
     print 'Creating instances'
     print currentImage
     create_instances()
-    #time.sleep(80)
+    time.sleep(70)
     instancesNumber=get_number_instances()
-    while(instancesNumber!=instancesRandNumber-1):
+    while(instancesNumber!=instancesRandNumber):
         time.sleep(random.randint(30,50))
         instancesNumber=get_number_instances()
     get_running_instances() # will be executed # of threads times. #save list of running instances IPs.
@@ -209,7 +209,7 @@ def createThreads(regionRand):
     instancesRandNumber=random.randint(minInstances,maxInstances) # get a random number between the min max instances vars
     print 'rand is '
     print instancesRandNumber
-    for inst in range(1,instancesRandNumber):
+    for inst in range(0,instancesRandNumber):
 	t=threading.Thread(target=start_func,args=[regionRand,instancesRandNumber])
 	threads.append(t)
 	t.start()
