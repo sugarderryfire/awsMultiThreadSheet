@@ -96,6 +96,7 @@ def threadwhoami():
 #attach thread to an instance.
 def attachThread2Instance():
     tIndex=threadwhoami()
+    print tIndex
     hostIP=runningInstances[tIndex]
     return hostIP
     
@@ -205,10 +206,11 @@ def start_func(regionRand,instancesRandNumber):
     
 #creating threads.
 def createThreads(regionRand):
-    global ec2,minInstances,maxInstances
+    global ec2,minInstances,maxInstances,threads
     instancesRandNumber=random.randint(minInstances,maxInstances) # get a random number between the min max instances vars
     print 'rand is '
     print instancesRandNumber
+    threads=[]
     for inst in range(0,instancesRandNumber):
 	t=threading.Thread(target=start_func,args=[regionRand,instancesRandNumber])
 	threads.append(t)
@@ -235,7 +237,7 @@ def changeFilescr(keyword,ID):
 
 def checkFinishXLSX():
     global limitCount,limitCounter
-    if(limitCounter==limitCount+1):
+    if(limitCounter==limitCount):
 	limitCounter=0
 	
 
@@ -248,6 +250,7 @@ def readKeyword():
     global limitCount,limitCounter
     data=pd.read_excel('https://github.com/sugarderryfire/awsMultiThreadSheet/blob/master/kidum.xlsx?raw=true',sheet_name='sheet1')
     limitCount = len(data['keyword'])
+    limitCount=limitCount-1
     changeFilescr(data['keyword'][limitCounter],data['appID'][limitCounter])
     incrementCounter()
     checkFinishXLSX()
