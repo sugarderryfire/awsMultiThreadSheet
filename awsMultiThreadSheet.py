@@ -230,7 +230,7 @@ def changeFilescr(keyword,ID):
     filea.write(line2)
     lineCommand='python Automain.py '
     lineCommand=lineCommand+keyword + ' ' + ID
-    filea.write(lineCommand)
+    filea.write(lineCommand.encode('utf8'))
     filea.close()
 
 
